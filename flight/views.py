@@ -14,6 +14,9 @@ from capstone.utils import render_to_pdf, createticket
 from .constant import FEE
 from flight.utils import createWeekDays, addPlaces, addDomesticFlights, addInternationalFlights
 
+import requests
+from django.conf import settings
+
 try:
     if len(Week.objects.all()) == 0:
         createWeekDays()
@@ -136,70 +139,95 @@ def flight(request):
     departdate = request.GET.get('DepartDate')
     depart_date = datetime.strptime(departdate, "%Y-%m-%d")
     return_date = None
+
     if trip_type == '2':
         returndate = request.GET.get('ReturnDate')
         return_date = datetime.strptime(returndate, "%Y-%m-%d")
-        flightday2 = Week.objects.get(number=return_date.weekday()) ##
-        origin2 = Place.objects.get(code=d_place.upper())   ##
+        flightday2 = Week.objects.get(number=return_date.weekday())  ##
+        origin2 = Place.objects.get(code=d_place.upper())  ##
         destination2 = Place.objects.get(code=o_place.upper())  ##
+
     seat = request.GET.get('SeatClass')
 
     flightday = Week.objects.get(number=depart_date.weekday())
     destination = Place.objects.get(code=d_place.upper())
     origin = Place.objects.get(code=o_place.upper())
+
+    # 初始化 min_duration 和 max_duration
+    min_duration = 0
+    max_duration = 0
+
     if seat == 'economy':
-        flights = Flight.objects.filter(depart_day=flightday,origin=origin,destination=destination).exclude(economy_fare=0).order_by('economy_fare')
+        flights = Flight.objects.filter(depart_day=flightday, origin=origin, destination=destination).exclude(economy_fare=0).order_by('economy_fare')
         try:
             max_price = flights.last().economy_fare
             min_price = flights.first().economy_fare
+            min_duration = flights.order_by('duration').first().duration
+            max_duration = flights.order_by('-duration').first().duration
         except:
             max_price = 0
             min_price = 0
 
-        if trip_type == '2':    ##
-            flights2 = Flight.objects.filter(depart_day=flightday2,origin=origin2,destination=destination2).exclude(economy_fare=0).order_by('economy_fare')    ##
+        if trip_type == '2':  ##
+            flights2 = Flight.objects.filter(depart_day=flightday2, origin=origin2, destination=destination2).exclude(economy_fare=0).order_by('economy_fare')  ##
             try:
-                max_price2 = flights2.last().economy_fare   ##
+                max_price2 = flights2.last().economy_fare  ##
                 min_price2 = flights2.first().economy_fare  ##
+                min_duration2 = flights2.order_by('duration').first().duration
+                max_duration2 = flights2.order_by('-duration').first().duration
             except:
                 max_price2 = 0  ##
                 min_price2 = 0  ##
-                
+                min_duration2 = 0
+                max_duration2 = 0
+
     elif seat == 'business':
-        flights = Flight.objects.filter(depart_day=flightday,origin=origin,destination=destination).exclude(business_fare=0).order_by('business_fare')
+        flights = Flight.objects.filter(depart_day=flightday, origin=origin, destination=destination).exclude(business_fare=0).order_by('business_fare')
         try:
             max_price = flights.last().business_fare
             min_price = flights.first().business_fare
+            min_duration = flights.order_by('duration').first().duration
+            max_duration = flights.order_by('-duration').first().duration
         except:
             max_price = 0
             min_price = 0
 
-        if trip_type == '2':    ##
-            flights2 = Flight.objects.filter(depart_day=flightday2,origin=origin2,destination=destination2).exclude(business_fare=0).order_by('business_fare')    ##
+        if trip_type == '2':  ##
+            flights2 = Flight.objects.filter(depart_day=flightday2, origin=origin2, destination=destination2).exclude(business_fare=0).order_by('business_fare')  ##
             try:
-                max_price2 = flights2.last().business_fare   ##
+                max_price2 = flights2.last().business_fare  ##
                 min_price2 = flights2.first().business_fare  ##
+                min_duration2 = flights2.order_by('duration').first().duration
+                max_duration2 = flights2.order_by('-duration').first().duration
             except:
                 max_price2 = 0  ##
                 min_price2 = 0  ##
+                min_duration2 = 0
+                max_duration2 = 0
 
     elif seat == 'first':
-        flights = Flight.objects.filter(depart_day=flightday,origin=origin,destination=destination).exclude(first_fare=0).order_by('first_fare')
+        flights = Flight.objects.filter(depart_day=flightday, origin=origin, destination=destination).exclude(first_fare=0).order_by('first_fare')
         try:
             max_price = flights.last().first_fare
             min_price = flights.first().first_fare
+            min_duration = flights.order_by('duration').first().duration
+            max_duration = flights.order_by('-duration').first().duration
         except:
             max_price = 0
             min_price = 0
-            
-        if trip_type == '2':    ##
-            flights2 = Flight.objects.filter(depart_day=flightday2,origin=origin2,destination=destination2).exclude(first_fare=0).order_by('first_fare')
+
+        if trip_type == '2':  ##
+            flights2 = Flight.objects.filter(depart_day=flightday2, origin=origin2, destination=destination2).exclude(first_fare=0).order_by('first_fare')
             try:
-                max_price2 = flights2.last().first_fare   ##
+                max_price2 = flights2.last().first_fare  ##
                 min_price2 = flights2.first().first_fare  ##
+                min_duration2 = flights2.order_by('duration').first().duration
+                max_duration2 = flights2.order_by('-duration').first().duration
             except:
                 max_price2 = 0  ##
-                min_price2 = 0  ##    ##
+                min_price2 = 0  ##
+                min_duration2 = 0
+                max_duration2 = 0  ##
 
     #print(calendar.day_name[depart_date.weekday()])
     if trip_type == '2':
@@ -207,17 +235,21 @@ def flight(request):
             'flights': flights,
             'origin': origin,
             'destination': destination,
-            'flights2': flights2,   ##
-            'origin2': origin2,    ##
-            'destination2': destination2,    ##
+            'flights2': flights2,  ##
+            'origin2': origin2,  ##
+            'destination2': destination2,  ##
             'seat': seat.capitalize(),
             'trip_type': trip_type,
             'depart_date': depart_date,
             'return_date': return_date,
             'max_price': math.ceil(max_price/100)*100,
             'min_price': math.floor(min_price/100)*100,
-            'max_price2': math.ceil(max_price2/100)*100,    ##
-            'min_price2': math.floor(min_price2/100)*100    ##
+            'max_price2': math.ceil(max_price2/100)*100,  ##
+            'min_price2': math.floor(min_price2/100)*100,  ##
+            'min_duration': min_duration,
+            'max_duration': max_duration,
+            'min_duration2': min_duration2,
+            'max_duration2': max_duration2,
         })
     else:
         return render(request, "flight/search.html", {
@@ -229,8 +261,11 @@ def flight(request):
             'depart_date': depart_date,
             'return_date': return_date,
             'max_price': math.ceil(max_price/100)*100,
-            'min_price': math.floor(min_price/100)*100
+            'min_price': math.floor(min_price/100)*100,
+            'min_duration': min_duration,
+            'max_duration': max_duration,
         })
+
 
 def review(request):
     flight_1 = request.GET.get('flight1Id')
@@ -407,15 +442,15 @@ def get_ticket(request):
     return HttpResponse(pdf, content_type='application/pdf')
 
 
-def bookings(request):
-    if request.user.is_authenticated:
-        tickets = Ticket.objects.filter(user=request.user).order_by('-booking_date')
-        return render(request, 'flight/bookings.html', {
-            'page': 'bookings',
-            'tickets': tickets
-        })
-    else:
-        return HttpResponseRedirect(reverse('login'))
+# def bookings(request):
+#     if request.user.is_authenticated:
+#         tickets = Ticket.objects.filter(user=request.user).order_by('-booking_date')
+#         return render(request, 'flight/bookings.html', {
+#             'page': 'bookings',
+#             'tickets': tickets
+#         })
+#     else:
+#         return HttpResponseRedirect(reverse('login'))
 
 @csrf_exempt
 def cancel_ticket(request):
@@ -471,3 +506,28 @@ def terms_and_conditions(request):
 
 def about_us(request):
     return render(request, 'flight/about.html')
+
+def geocode_address(request):
+    # get adderss from request
+    address = request.GET.get('address', '')
+    if not address:
+        return JsonResponse({"error": "Address is required"}, status=400)
+
+    # use Geocoding API
+    api_key = settings.GOOGLE_MAPS_API_KEY
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
+    response = requests.get(url)
+
+    # handle result from API 
+    if response.status_code == 200:
+        data = response.json()
+        if data['status'] == 'OK':
+            location = data['results'][0]['geometry']['location']
+            return JsonResponse({'lat': location['lat'], 'lng': location['lng']})
+        else:
+            return JsonResponse({"error": data['status']}, status=400)
+    return JsonResponse({"error": "Failed to fetch geocoding data"}, status=500)
+
+def show_map(request):
+    return render(request, 'flight/map.html')
+    # return render(request, 'gmap/map_api/templates/map.html')

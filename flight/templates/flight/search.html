@@ -192,6 +192,27 @@
                                             </div>
                                         </div>
                                     </div><!---->
+                                    <div class="filter-duration">
+                                        <div class="font-weight-bold">Flight Duration</div>
+                                        <div>
+                                            <input type="range" class="form-control-range" 
+                                                   min="{{min_duration}}" 
+                                                   max="{{max_duration}}" 
+                                                   value="{{max_duration}}" 
+                                                   oninput="filter()">
+                                            <div class="duration-range-output">
+                                                <div class="initial-duration-range">
+                                                    <span class="initial-duration-value">{{min_duration}}</span>
+                                                    <span class="duration-unit">hrs</span>
+                                                </div>
+                                                <div class="final-duration-range">
+                                                    <span class="final-duration-value"></span>
+                                                    <span class="duration-unit">hrs</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <div class="time-slot departure-time-slot-group">
                                         <div class="font-weight-bold">Departure Time</div>
                                         <div style="display: flex; justify-content: space-between;">
@@ -478,6 +499,26 @@
                                                 </div>
                                             </div>
                                         </div><!---->
+                                        <div class="filter-duration2">
+                                            <div class="font-weight-bold">Flight Duration</div>
+                                            <div>
+                                                <input type="range" class="form-control-range" 
+                                                       min="{{min_duration2}}" 
+                                                       max="{{max_duration2}}" 
+                                                       value="{{max_duration2}}" 
+                                                       oninput="filter2()">
+                                                <div class="duration-range-output">
+                                                    <div class="initial-duration-range">
+                                                        <span class="initial-duration-value">{{min_duration2}}</span>
+                                                        <span class="duration-unit">hrs</span>
+                                                    </div>
+                                                    <div class="final-duration-range">
+                                                        <span class="final-duration-value"></span>
+                                                        <span class="duration-unit">hrs</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div class="time-slot2 departure-time-slot-group2">
                                             <div class="font-weight-bold">Departure Time</div>
                                             <div style="display: flex; justify-content: space-between;">

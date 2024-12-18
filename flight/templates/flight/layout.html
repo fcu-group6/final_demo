@@ -33,8 +33,11 @@
           <li class="nav-item {% if not page %}active{% endif %}">
             <a class="nav-link" href="{% url 'index' %}">Home</a>
           </li>
-          <li class="nav-item {% if page == 'bookings' %}active{% endif %}">
+          {% comment %} <li class="nav-item {% if page == 'bookings' %}active{% endif %}">
             <a class="nav-link" href="{% url 'bookings' %}">My Bookings</a>
+          </li> {% endcomment %}
+          <li class="nav-item {% if not page %}active{% endif %}">
+            <a class="nav-link" href="{% url 'map' %}">Map</a> 
           </li>
         </ul>
         <ul class="navbar-nav">

@@ -130,3 +130,8 @@ STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
 AUTH_USER_MODEL = 'flight.User'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#關閉瀏覽器後，再次打開網站時就會自動登出
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+#my google map api key
