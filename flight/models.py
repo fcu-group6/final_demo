@@ -1,9 +1,32 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
+from django.contrib.auth.models import User
+from django.conf import settings
 from datetime import datetime
+from django.utils.timezone import now
 
 # Create your models here.
+
+# 文字、圖片、時間、地點
+from django.conf import settings
+
+class Address(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='addresses' ,default=1)
+    content = models.TextField()
+    time = models.DateTimeField(default=now)
+    picture = models.ImageField(upload_to='pictures/')
+    address = models.CharField(max_length=255)
+    
+    def __str__(self):
+        return f"{self.content}, {self.address}"
+    
+class Messages(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user.first_name} {self.user.last_name}: {self.content}'
 
 class User(AbstractUser):
     def __str__(self):
@@ -94,3 +117,13 @@ class Ticket(models.Model):
 
     def __str__(self):
         return self.ref_no
+
+class Post(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    content = models.TextField()  # 貼文內容
+    address = models.CharField(max_length=255)  # 貼文地址
+    photo = models.ImageField(upload_to='photos/', null=True, blank=True)  # 貼文照片
+    timestamp = models.DateTimeField(auto_now_add=True)  # 貼文時間戳記
+
+    def __str__(self):
+        return self.content

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Maps with Search and Editable Posts</title>
+    <!-- 引入 Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDN5oglylU8YSZWKyJNBJr17KpqieRT4IY&libraries=places"></script>
+    <script>
+        function initAutocomplete() {
+            const input = document.getElementById('id_address');  // Django表单字段默认id格式
+            const autocomplete = new google.maps.places.Autocomplete(input);
+            autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace();
+                if (place.geometry) {
+                    const lat = place.geometry.location.lat();
+                    const lng = place.geometry.location.lng();
+                    updateMap(lat, lng);
+                } else {
+                    alert("無法找到選擇的地址");
+                }
+            });
+        }
+
+        function updateMap(lat, lng) {
+            const location = { lat, lng };
+            map.setCenter(location);
+        }
+
+        window.onload = () => {
+            initAutocomplete();
+        };
+    </script>
+    <style>
+        /* 基本样式 */
+    </style>
+</head>
+<body>
+    <h1>POST</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">submit</button>
+    </form>
+    <div id="map"></div>
+</body>
+</html>
