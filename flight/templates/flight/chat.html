@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .return-button {
+            position: fixed;
+            top: 50px; /* 調整此值以控制按鈕的位置 */
+            right: 10px; /* 靠近右側 */
+            background-color: #343333;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 1em;
+            z-index: 1000; /* 確保按鈕在所有元素之上 */
+        }
+        .return-button:hover {
+            background-color: #636161;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+            color: #444;
+        }
+
+        #alert-guest {
+            text-align: center;
+            margin: 10px;
+            color: red;
+        }
+
+        #chat-box {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: scroll;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 75%;
+            word-wrap: break-word;
+            clear: both;
+        }
+
+        .message-left {
+            background-color: #e9ecef;
+            text-align: left;
+            float: left;
+        }
+
+        .message-right {
+            background-color: #d1e7dd;
+            text-align: right;
+            float: right;
+        }
+
+        .translation {
+            font-size: 0.85em;
+            color: gray;
+            margin-top: 5px;
+        }
+
+        #chat-form {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #message {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #language-select {
+            max-width: 600px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: flex-end;
+            padding-right: 10px;
+        }
+
+        #language-select select {
+            padding: 5px 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat Room</h1>
+
+    <!-- Gust -->
+    <div id="alert-guest">
+        {% if not user.is_authenticated %}
+        You are in Guest mode. Your messages will be lost.
+        {% endif %}
+    </div>
+
+    <!-- language choose -->
+    <div id="language-select">
+        <label for="language">Translate to:</label>
+        <select id="language">
+            <option value="en">English</option>
+            <option value="zh-CN">中文</option>
+        </select>
+    </div>
+
+    <div id="chat-box">
+        <!-- 消息顯示區 -->
+    </div>
+
+    <form id="chat-form">
+        {% csrf_token %}
+        <textarea id="message" placeholder="Type your message here"></textarea>
+        <button type="submit">Send</button>
+    </form>
+
+    <script>
+        $(document).ready(function() {
+            let currentLanguage = 'en';  //English
+
+            function loadMessages() {
+                $.get('/flight/chat/messages/', { lang: currentLanguage }, function(data) {
+                    $('#chat-box').empty();  // clear
+                    data.messages.forEach(function(msg) {
+                        const alignment = msg.user === "{{ request.user.username }}" ? 'message-right' : 'message-left';
+                        const translation = msg.translated 
+                            ? `<div class="translation">(${msg.translated})</div>` 
+                            : '';
+                        $('#chat-box').append(`
+                            <div class="message ${alignment}">
+                                <strong>${msg.user}:</strong> ${msg.content}
+                                ${translation}
+                            </div>
+                        `);
+                    });
+
+                    // bottom
+                    $('#chat-box').scrollTop($('#chat-box')[0].scrollHeight);
+                });
+            }
+
+            loadMessages();  //first liad
+
+            // send
+            $('#chat-form').submit(function(event) {
+                event.preventDefault();  // 防止表單默認提交
+                const message = $('#message').val();
+                if (message.trim() !== "") {
+                    $.ajax({
+                        url: '/flight/chat/send/',
+                        type: 'POST',
+                        data: { content: message },
+                        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                $('#message').val('');  //clear
+                                loadMessages();  // 重新加載消息
+                            } else {
+                                alert('Failed to send message.');
+                            }
+                        },
+                        error: function() {
+                            alert('Error sending message.');
+                        }
+                    });
+                }
+            });
+
+            //language
+            $('#language').change(function() {
+                currentLanguage = $(this).val();
+                loadMessages();
+            });
+        });
+    </script>
+</body>
+<body>
+    <a href="http://127.0.0.1:8000/" class="return-button">Home</a>
+    <div id="map"></div>
+</body>
+</html>

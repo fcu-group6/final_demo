@@ -1,137 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <title>Google Maps with Autocomplete</title>
-    <!-- Google Maps API (with Places library) -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=這裡要放key&libraries=places"></script>
-    <script>
-        let map;
-        let marker;
-
-        // Initialize the map
-        function initMap(lat = 25.033, lng = 121.565) {
-            const location = { lat, lng };
-
-            // Create a new map instance
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 15,
-                center: location
-            });
-
-            // Add a marker to the map
-            marker = new google.maps.Marker({
-                position: location,
-                map: map
-            });
-        }
-
-        // Fetch geocode based on user input
-        function fetchGeocode() {
-            const address = document.getElementById('address').value;
-
-            // Fetch geocode from the backend (or use Google Maps API Geocoder directly)
-            fetch(`/geocode/?address=${encodeURIComponent(address)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.lat && data.lng) {
-                        updateMap(data.lat, data.lng);
-                    } else {
-                        alert("Unable to fetch geocode data. Please check the address format.");
-                    }
-                })
-                .catch(() => {
-                    alert("An error occurred while fetching geocode data.");
-                });
-        }
-
-        // Update map and marker position
-        function updateMap(lat, lng) {
-            const location = { lat, lng };
-
-            // Update map center
-            map.setCenter(location);
-
-            // Update marker position
-            if (marker) {
-                marker.setPosition(location);
-            } else {
-                marker = new google.maps.Marker({
-                    position: location,
-                    map: map
-                });
-            }
-        }
-
-        // Initialize address autocomplete
-        function initAutocomplete() {
-            const input = document.getElementById('address');
-            const autocomplete = new google.maps.places.Autocomplete(input);
-
-            // Triggered when the user selects an address
-            autocomplete.addListener('place_changed', () => {
-                const place = autocomplete.getPlace();
-                if (place.geometry) {
-                    const lat = place.geometry.location.lat();
-                    const lng = place.geometry.location.lng();
-                    updateMap(lat, lng);
-                } else {
-                    alert("No details available for the selected location.");
-                }
-            });
-        }
-
-        // Initialize map and autocomplete when the page loads
-        window.onload = () => {
-            initMap(); // Initialize the map
-            initAutocomplete(); // Initialize autocomplete
-        };
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map with Posts</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDN5oglylU8YSZWKyJNBJr17KpqieRT4IY&libraries=places"></script>
     <style>
-        /* Basic styles */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+        .return-button {
+            position: fixed;
+            top: 50px; /* 調整此值以控制按鈕的位置 */
+            right: 10px; /* 靠近右側 */
+            background-color: #343333;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 1em;
+            z-index: 1000; /* 確保按鈕在所有元素之上 */
         }
-        h1 {
-            text-align: center;
-            margin: 20px 0;
+        .return-button:hover {
+            background-color: #636161;
         }
+
         #map {
-            height: 500px;
+            height: 100vh;
             width: 100%;
         }
-        .input-container {
-            text-align: center;
-            margin: 20px;
-        }
-        #address {
-            width: 300px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            background-color: #007BFF;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
     </style>
+    <script>
+        let map;
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: { lat: 25.033, lng: 121.565 }
+            });
+
+            // 從 Django 模板中傳遞的地址資料
+            const addresses = JSON.parse('{{ addresses_json|escapejs }}');
+
+            // 添加地址到地圖
+            addresses.forEach(addr => {
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ 'address': addr.address }, (results, status) => {
+                    if (status === 'OK') {
+                        const position = results[0].geometry.location;
+                        const marker = new google.maps.Marker({
+                            position: position,
+                            map: map,
+                            title: addr.content
+                        });
+
+                        marker.addListener('click', () => {
+                            window.location.href = `pin_post/?address=${encodeURIComponent(addr.address)}`;
+                        });
+                    } else {
+                        console.log('Geocode was not successful for the following reason: ' + status);
+                    }
+                });
+            });
+        }
+
+        window.onload = () => {
+            initMap();
+        };
+    </script>
 </head>
 <body>
-    <h1>Google Maps with Autocomplete</h1>
-    <div class="input-container">
-        <!-- Address input field -->
-        <input type="text" id="address" placeholder="Enter an address">
-        <button onclick="fetchGeocode()">Search Location</button>
-    </div>
-    <!-- Map container -->
+    <a href="http://127.0.0.1:8000/" class="return-button">Home</a>
     <div id="map"></div>
 </body>
 </html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Posts</title>
+</head>
+<style>
+    .return-button {
+        position: fixed;
+        top: 50px; /* 調整此值以控制按鈕的位置 */
+        right: 10px; /* 靠近右側 */
+        background-color: #343333;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 1em;
+        z-index: 1000; /* 確保按鈕在所有元素之上 */
+    }
+    .return-button:hover {
+        background-color: #636161;
+    }
+</style>
+<body>
+    <h1>尚未登入</h1>
+    <p>請先登入以查看您的貼文。</p>
+</body>
+<body>
+    <a href="http://127.0.0.1:8000/" class="return-button">Home</a>
+    <div id="map"></div>
+</body>
+</html>

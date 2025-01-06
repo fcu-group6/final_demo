@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Post lists</title>
+    <style>
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .post-content {
+            flex: 1;
+        }
+        button {
+            background-color: #343333;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #636161;
+        }
+        .return-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #343333;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 1em;
+        }
+        .return-button:hover {
+            background-color: #636161;
+        }
+        .create-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #343333;
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .create-button:hover {
+            background-color: #636161;
+        }
+    </style>
+</head>
+<body>
+    <a href="http://127.0.0.1:8000/" class="return-button">Home</a>
+    <h1>Post lists</h1>
+    <ul>
+        {% for post in posts %}
+        <li id="post-{{ post.id }}">
+            <div class="post-content">
+                <p style="font-size: 1.5em; font-weight: bold; margin: 0;">{{ post.content }}</p>
+                <p style="color: #888; font-size: 0.9em; margin: 0;">{{ post.address }}</p>
+                <p style="color: #888; font-size: 0.9em; margin: 0;">{{ post.time }}</p>
+                {% if post.picture %}
+                    <img src="{{ post.picture.url }}" alt="Post Picture" style="max-width: 200px; max-height: 200px;">
+                {% endif %}
+            </div>
+            <form action="{% url 'delete_post' post.id %}" method="post" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" onclick="return confirm('確定要刪除這篇貼文嗎？');">刪除</button>
+            </form>
+        </li>        
+        {% endfor %}
+    </ul>
+    <a href="{% url 'create_post' %}" class="create-button">+</a>
+</body>
+</html>

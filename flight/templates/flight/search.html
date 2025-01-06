@@ -191,8 +191,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div><!---->
-                                    <div class="filter-duration">
+                                    </div>
+                                    {% comment %} <div class="filter-duration">
                                         <div class="font-weight-bold">Flight Duration</div>
                                         <div>
                                             <input type="range" class="form-control-range" 
@@ -211,7 +211,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> {% endcomment %}
                                     
                                     <div class="time-slot departure-time-slot-group">
                                         <div class="font-weight-bold">Departure Time</div>
@@ -432,7 +432,7 @@
                                                             <input type="hidden" name="seatClass" value="{{seat}}">
                                                             <button class="btn btn-primary btn-danger o-b" type="submit">
                                                             
-                                                                Book Flight <!--&#8594;-->
+                                                                Ticket Details
                                                             </button>
                                                         </form>
                                                     {% endif %}
@@ -499,7 +499,7 @@
                                                 </div>
                                             </div>
                                         </div><!---->
-                                        <div class="filter-duration2">
+                                        {% comment %} <div class="filter-duration2">
                                             <div class="font-weight-bold">Flight Duration</div>
                                             <div>
                                                 <input type="range" class="form-control-range" 
@@ -518,7 +518,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div> {% endcomment %}
                                         <div class="time-slot2 departure-time-slot-group2">
                                             <div class="font-weight-bold">Departure Time</div>
                                             <div style="display: flex; justify-content: space-between;">
@@ -673,9 +673,6 @@
                                 </div>
                                 {% endif %}
 
-
-
-
                                 <div id="flights_div2">
                                     {% for flight2 in flights2 %}
 
@@ -738,12 +735,10 @@
                                                                 <input type="hidden" name="flight1Date", value="{{depart_date|date:'d-m-Y'}}">
                                                                 <input type="hidden" name="seatClass" value="{{seat}}">
                                                                 <button class="btn btn-primary btn-danger" type="submit">
-                                                                    Book Flight &#8594;
+                                                                    Ticket Details
                                                                 </button>
                                                             </form>
                                                         {% endif %}
-
-
                                                         
                                                     </div>
                                                 </div>

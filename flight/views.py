@@ -8,7 +8,7 @@ from datetime import datetime
 import math
 from .models import *
 from capstone.utils import render_to_pdf, createticket
-
+from django.contrib.auth.decorators import login_required
 
 #Fee and Surcharge variable
 from .constant import FEE
@@ -16,6 +16,28 @@ from flight.utils import createWeekDays, addPlaces, addDomesticFlights, addInter
 
 import requests
 from django.conf import settings
+
+from django.shortcuts import render, redirect
+from .forms import AddressForm
+
+from django.shortcuts import get_object_or_404, redirect
+from .models import Address
+
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+from django.shortcuts import render
+
+from django.http import JsonResponse
+
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
+from .models import Messages
+from django.http import JsonResponse
+import json
+from django.shortcuts import render
+from googleapiclient.discovery import build 
 
 try:
     if len(Week.objects.all()) == 0:
@@ -380,44 +402,6 @@ def book(request):
     else:
         return HttpResponse("Method must be post.")
 
-def payment(request):
-    if request.user.is_authenticated:
-        if request.method == 'POST':
-            ticket_id = request.POST['ticket']
-            t2 = False
-            if request.POST.get('ticket2'):
-                ticket2_id = request.POST['ticket2']
-                t2 = True
-            fare = request.POST.get('fare')
-            card_number = request.POST['cardNumber']
-            card_holder_name = request.POST['cardHolderName']
-            exp_month = request.POST['expMonth']
-            exp_year = request.POST['expYear']
-            cvv = request.POST['cvv']
-
-            try:
-                ticket = Ticket.objects.get(id=ticket_id)
-                ticket.status = 'CONFIRMED'
-                ticket.booking_date = datetime.now()
-                ticket.save()
-                if t2:
-                    ticket2 = Ticket.objects.get(id=ticket2_id)
-                    ticket2.status = 'CONFIRMED'
-                    ticket2.save()
-                    return render(request, 'flight/payment_process.html', {
-                        'ticket1': ticket,
-                        'ticket2': ticket2
-                    })
-                return render(request, 'flight/payment_process.html', {
-                    'ticket1': ticket,
-                    'ticket2': ""
-                })
-            except Exception as e:
-                return HttpResponse(e)
-        else:
-            return HttpResponse("Method must be post.")
-    else:
-        return HttpResponseRedirect(reverse('login'))
 
 
 def ticket_data(request, ref):
@@ -429,31 +413,6 @@ def ticket_data(request, ref):
         'flight_date': ticket.flight_ddate,
         'status': ticket.status
     })
-
-@csrf_exempt
-def get_ticket(request):
-    ref = request.GET.get("ref")
-    ticket1 = Ticket.objects.get(ref_no=ref)
-    data = {
-        'ticket1':ticket1,
-        'current_year': datetime.now().year
-    }
-    pdf = render_to_pdf('flight/ticket.html', data)
-    return HttpResponse(pdf, content_type='application/pdf')
-
-
-# def bookings(request):
-#     if request.user.is_authenticated:
-#         tickets = Ticket.objects.filter(user=request.user).order_by('-booking_date')
-#         return render(request, 'flight/bookings.html', {
-#             'page': 'bookings',
-#             'tickets': tickets
-#         })
-#     else:
-#         return HttpResponseRedirect(reverse('login'))
-
-@csrf_exempt
-def cancel_ticket(request):
     if request.method == 'POST':
         if request.user.is_authenticated:
             ref = request.POST['ref']
@@ -478,7 +437,7 @@ def cancel_ticket(request):
     else:
         return HttpResponse("Method must be POST.")
 
-def resume_booking(request):
+# def resume_booking(request):
     if request.method == 'POST':
         if request.user.is_authenticated:
             ref = request.POST['ref']
@@ -528,6 +487,97 @@ def geocode_address(request):
             return JsonResponse({"error": data['status']}, status=400)
     return JsonResponse({"error": "Failed to fetch geocoding data"}, status=500)
 
-def show_map(request):
-    return render(request, 'flight/map.html')
-    # return render(request, 'gmap/map_api/templates/map.html')
+@login_required(login_url='/flight/guest_post/')
+def list_posts(request):
+    posts = Address.objects.filter(user=request.user)
+    return render(request, 'flight/list_posts.html', {'posts': posts})
+
+def guest_post(request):
+    # 如果沒有登入的話，顯示尚未登入的提示
+    return render(request, 'flight/guest_post.html')
+
+def show_post(request):
+    if request.method == "POST":
+        form = AddressForm(request.POST, request.FILES)
+        if form.is_valid():
+            address = form.save(commit=False)
+            address.user = request.user
+            form.save()
+            return redirect('post')  # 替换为你的成功页面
+    else:
+        form = AddressForm()
+
+    return render(request, 'flight/post.html', {'form': form})
+    # return render(request, 'flight/post.html')
+
+def delete_post(request, post_id):
+    post = get_object_or_404(Address, id=post_id, user=request.user)  # 驗證貼文屬於目前使用者
+    post.delete()  # 刪除資料
+    return redirect('post')  # 刪除後重定向到貼文列表頁
+
+def map_view(request):
+    addresses = list(Address.objects.values('content', 'address'))
+    addresses_json = json.dumps(addresses, cls=DjangoJSONEncoder)
+    return render(request, 'flight/map.html', {'addresses_json': addresses_json})
+
+
+def pin_view(request):
+    address = request.GET.get('address')
+    posts = Address.objects.filter(user=request.user, address=address)
+    return render(request, 'flight/pin_post.html', {'posts': posts})
+
+from googleapiclient.discovery import build
+from django.http import JsonResponse
+from django.shortcuts import render
+from .models import Messages
+
+# 翻譯文本
+def translate_text(text, target_language):
+    api_key = "AIzaSyDFrVuXNtiGp6PL8wBt_iwEmIjcJNhB4qU"  # Google Translate API 密鑰
+    service = build('translate', 'v2', developerKey=api_key)
+    result = service.translations().list(q=text, target=target_language).execute()
+    return result['translations'][0]['translatedText']
+
+# 顯示聊天視圖
+def show_chat(request):
+    return render(request, 'flight/chat.html')
+
+# 獲取訊息
+def get_messages(request):
+    target_language = request.GET.get('lang', 'en')  # 預設語言為英語
+    
+    if request.user.is_authenticated:
+        # 如果用戶已登入，從數據庫讀取訊息
+        messages = Messages.objects.all().order_by('timestamp')
+        message_data = []
+        for msg in messages:
+            translated_content = translate_text(msg.content, target_language) if msg.user != request.user else None
+            message_data.append({
+                'user': msg.user.username,
+                'content': msg.content,
+                'translated': translated_content,
+            })
+    else:
+        # 如果用戶未登入，從 session 讀取訊息
+        messages = request.session.get('chat_messages', [])
+        message_data = [{'user': msg['user'], 'content': msg['content'], 'translated': None} for msg in messages]
+
+    return JsonResponse({'messages': message_data})
+
+# 發送訊息
+def post_message(request):
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        if content:
+            if request.user.is_authenticated:
+                # 如果用戶已登入，存儲到數據庫
+                Messages.objects.create(user=request.user, content=content)
+            else:
+                # 如果用戶未登入，存儲到 session
+                new_message = {'user': 'Guest', 'content': content}
+                messages = request.session.get('chat_messages', [])
+                messages.append(new_message)
+                request.session['chat_messages'] = messages
+            return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+
