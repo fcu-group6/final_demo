@@ -533,7 +533,7 @@ from .models import Messages
 
 # 翻譯文本
 def translate_text(text, target_language):
-    api_key = "AIzaSyDFrVuXNtiGp6PL8wBt_iwEmIjcJNhB4qU"  # Google Translate API 密鑰
+    api_key = ""  # Google Translate API 密鑰
     service = build('translate', 'v2', developerKey=api_key)
     result = service.translations().list(q=text, target=target_language).execute()
     return result['translations'][0]['translatedText']
